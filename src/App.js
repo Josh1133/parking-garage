@@ -7,7 +7,7 @@ import { Button, InputGroup, Input, Form } from 'reactstrap';
 function App() {
   //States for current page of the application
   const [vacancy, setVacancy] = useState('');
-  const [Error, setError] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [responseMessage, setResponseMessage] = useState('');
   const [customers, setCustomers] = useState([]);
   const [ticketNumberPay, setTicketNumberPay] = useState([]);
@@ -42,10 +42,13 @@ function App() {
   function getTicket() {
     restMessages();
     if (vacancy === 'No Vacancy') {
-      setError('Sorry but there are no more spots available');
+      setErrorMessage('Sorry but there are no more spots available');
     } else {
       let ticketNumber = Math.floor(Math.random() * 1000000000);
-      setCustomers([...customers, { entryTime: Date.now(), ticketNumber }]);
+      setCustomers([
+        ...customers,
+        { entryTime: Date.now(), ticketNumber, paid: false }
+      ]);
       setTotalSpotsAvalible(TotalSpotsAvalible - 1);
       setResponseMessage(`your ticket number is ${ticketNumber}`);
       if (TotalSpotsAvalible - 1 === 0) {
@@ -56,7 +59,7 @@ function App() {
 
   // This function resets all the messages to the customer
   function restMessages() {
-    setError('');
+    setErrorMessage('');
     setResponseMessage('');
   }
 
@@ -70,16 +73,24 @@ function App() {
     let customer = customers.filter(cust => {
       return cust.ticketNumber.toString() === ticketNumberLeave;
     });
+    let noErrorFlag = true;
     if (customer.length > 0) {
       customers.map((cust, index) => {
         if (cust === customer[0]) {
-          customers.splice(index, 1);
+          if (customer[0].paid) {
+            customers.splice(index, 1);
+          } else {
+            noErrorFlag = false;
+            setErrorMessage('You have not paid your ticket');
+          }
         }
       });
-      setTotalSpotsAvalible(TotalSpotsAvalible + 1);
-      setResponseMessage('Thank you and have a good day');
+      if (noErrorFlag) {
+        setTotalSpotsAvalible(TotalSpotsAvalible + 1);
+        setResponseMessage('Thank you and have a good day');
+      }
     } else {
-      setError(
+      setErrorMessage(
         'There is no Ticket with that number, Please validate the number and try again.'
       );
     }
@@ -97,6 +108,11 @@ function App() {
     });
 
     if (customer.length > 0) {
+      customers.map((cust, index) => {
+        if (cust.ticketNumber.toString() === ticketNumberPay) {
+          customers[index].paid = true;
+        }
+      });
       let currentTime = Date.now();
       let diff = (currentTime - customer.entryTime) / 1000;
       diff /= 60 * 60;
@@ -111,7 +127,7 @@ function App() {
         setResponseMessage('Your upto 1 hr payment is $3');
       }
     } else {
-      setError(
+      setErrorMessage(
         'There is no Ticket with that number, Please validate the number and try again.'
       );
     }
@@ -168,7 +184,7 @@ function App() {
             <h4>{responseMessage}</h4>
           </div>
           <div className='noVacancyError'>
-            <h4>{Error}</h4>
+            <h4>{errorMessage}</h4>
           </div>
         </div>
       </div>
